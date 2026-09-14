@@ -122,14 +122,14 @@ void* workerThreadStart(void* threadArgs) {
 
     // TODO: Implement worker thread here.
 
-    int nt = args->numThreads;
-    unsigned int height = args->height;
-    
-    mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
-                args->width, args->height,
-                (args->threadId * height) / nt, ((args->threadId + 1) * (height)) / nt,
-                args->maxIterations, args->output);
-
+    unsigned int i = 0;
+    while (args->threadId + i < args->height) {
+        mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
+                  args->width, args->height,
+                  args->threadId + i, args->threadId + i + 1,
+                  args->maxIterations, args->output);
+        i += args->numThreads;
+    }
     return NULL;
 }
 
