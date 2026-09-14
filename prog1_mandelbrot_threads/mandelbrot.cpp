@@ -121,7 +121,8 @@ void* workerThreadStart(void* threadArgs) {
     WorkerArgs* args = static_cast<WorkerArgs*>(threadArgs);
 
     // TODO: Implement worker thread here.
-
+    
+    double startTime = CycleTimer::currentSeconds();
     unsigned int i = 0;
     while (args->threadId + i < args->height) {
         mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
@@ -130,6 +131,8 @@ void* workerThreadStart(void* threadArgs) {
                   args->maxIterations, args->output);
         i += args->numThreads;
     }
+    double endTime = CycleTimer::currentSeconds();
+    printf("thread id: {%d} time: {%.3f} seconds\n", args->threadId, endTime - startTime);
     return NULL;
 }
 
