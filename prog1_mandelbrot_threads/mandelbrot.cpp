@@ -121,45 +121,14 @@ void* workerThreadStart(void* threadArgs) {
     WorkerArgs* args = static_cast<WorkerArgs*>(threadArgs);
 
     // TODO: Implement worker thread here.
-    //
-    if (args->numThreads == 2) {
-      if (args->threadId == 0) {
-          mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
-                          args->width, args->height,
-                          0, (args->height)/2,
-                          args->maxIterations, args->output);
-      } else if (args->threadId == 1 ) {
-          mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
-                          args->width, args->height,
-                          (args->height)/2, args->height,
-                          args->maxIterations, args->output);
-      }
 
-    printf("Hello world from thread %d\n", args->threadId);
-
-    } else if (args->numThreads == 4) {
-      if (args->threadId == 0) {
-          mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
-                          args->width, args->height,
-                          0, (args->height)/4,
-                          args->maxIterations, args->output);
-      } else if (args->threadId == 1 ) {
-          mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
-                          args->width, args->height,
-                          (args->height)/4, (args->height)/2,
-                          args->maxIterations, args->output);
-      } else if (args->threadId == 2 ) {
-          mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
-                          args->width, args->height,
-                          (args->height)/2, 3*(args->height)/4,
-                          args->maxIterations, args->output);
-      } else if (args->threadId == 3 ) {
-          mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
-                          args->width, args->height,
-                          3*(args->height)/4, (args->height),
-                          args->maxIterations, args->output);
-      }
-    }
+    int nt = args->numThreads;
+    unsigned int height = args->height;
+    
+    mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
+                args->width, args->height,
+                (args->threadId * height) / nt, ((args->threadId + 1) * (height)) / nt,
+                args->maxIterations, args->output);
 
     return NULL;
 }
