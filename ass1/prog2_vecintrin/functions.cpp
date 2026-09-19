@@ -1,3 +1,4 @@
+#include <cassert>
 #include <stdio.h>
 #include <algorithm>
 #include <math.h>
@@ -83,6 +84,9 @@ void clampedExpSerial(float* values, int* exponents, float* output, int N) {
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
     // Implement your vectorized version of clampedExpSerial here
     //  ...
+
+    int limit = N - (N % VECTOR_WIDTH);
+
     __cmu418_vec_float x; // values[i]
     __cmu418_vec_int y; // exponent[i]
     __cmu418_vec_float result; // output[i]
@@ -94,7 +98,7 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
     __cmu418_mask maskAll, maskIsGreaterThanThreshold, maskExpIsOdd, maskGreaterThanZero;
     float threshold = 4.18f;
 
-    for (int i = 0; i < N; i+=VECTOR_WIDTH)  {
+    for (int i = 0; i < limit; i+=VECTOR_WIDTH)  {
     // mask all 
     maskAll = _cmu418_init_ones(); 
     // mask for greater than the threshold , ie 4.18
@@ -131,6 +135,11 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
     // write back to memeory
     _cmu418_vstore_float(output+i, result, maskAll);
   }
+
+  // cleanup remaining elements
+  for (int i = limit; i < N; i++){
+    clampedExpSerial(values+i, exponents+i, output+i, 1);
+  }
 }
 
 
@@ -148,5 +157,21 @@ float arraySumSerial(float* values, int N) {
 float arraySumVector(float* values, int N) {
     // Implement your vectorized version here
     //  ...
-	return 0.f;
+    __cmu418_vec_float x;
+    float sum = 0.f;
+
+
+    for (int i = 0; i < N; i+=VECTOR_WIDTH) {
+        __cmu418_mask maskAll = _cmu418_init_ones();
+        _cmu418_vload_float(x, values+i, maskAll);
+        // horizontal add
+        for (int j = VECTOR_WIDTH; j > 1; j /= 2) {
+            __cmu418_vec_float temp;
+            _cmu418_hadd_float(temp, x);
+            _cmu418_interleave_float(x, temp);
+        }
+        sum += x.value[0];
+  }
+
+	return sum;
 }
