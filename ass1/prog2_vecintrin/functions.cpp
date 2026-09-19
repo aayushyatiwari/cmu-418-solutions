@@ -83,6 +83,54 @@ void clampedExpSerial(float* values, int* exponents, float* output, int N) {
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
     // Implement your vectorized version of clampedExpSerial here
     //  ...
+    __cmu418_vec_float x; // values[i]
+    __cmu418_vec_int y; // exponent[i]
+    __cmu418_vec_float result; // output[i]
+    __cmu418_vec_int zero = _cmu418_vset_int(0.f);
+    __cmu418_vec_int one = _cmu418_vset_int(1);
+    __cmu418_vec_int two = _cmu418_vset_int(2);
+    __cmu418_vec_int bd = _cmu418_vset_int(1); // for checking if exponent is odd
+    __cmu418_vec_float ths = _cmu418_vset_float(4.18f);
+    __cmu418_mask maskAll, maskIsGreaterThanThreshold, maskExpIsOdd, maskGreaterThanZero;
+    float threshold = 4.18f;
+
+    for (int i = 0; i < N; i+=VECTOR_WIDTH)  {
+    // mask all 
+    maskAll = _cmu418_init_ones(); 
+    // mask for greater than the threshold , ie 4.18
+    maskIsGreaterThanThreshold = _cmu418_init_ones(0);
+    // mask for odd exponents
+    maskExpIsOdd = _cmu418_init_ones(0);
+    // mask for y > 0 
+    maskGreaterThanZero = _cmu418_init_ones();
+
+    // load values and exponents into vector registers
+    _cmu418_vload_float(x, values+i, maskAll);
+    _cmu418_vload_int(y, exponents+i, maskAll);
+    // set results to 1.f
+    _cmu418_vset_float(result, 1.f, maskAll);
+    
+    // while y > 0 branch
+    while (_cmu418_cntbits(maskGreaterThanZero) > 0) {
+        // check if exponent is odd
+        _cmu418_vbitand_int(bd, y, one, maskAll);
+        // set mask for odd exponents
+        _cmu418_veq_int(maskExpIsOdd, bd, one, maskAll);
+        // if exponent is odd, multiply result by x
+        _cmu418_vmult_float(result, result, x, maskExpIsOdd);
+        // square x
+        _cmu418_vmult_float(x, x, x, maskGreaterThanZero);
+        // divide y by 2
+        _cmu418_vdiv_int(y, y, two, maskGreaterThanZero);
+        // update mask for y > 0
+        _cmu418_vgt_int(maskGreaterThanZero, y, zero, maskAll);
+    }
+    // if greater than threshold, set result to threshold
+    _cmu418_vgt_float(maskIsGreaterThanThreshold, result, ths, maskAll);
+    _cmu418_vset_float(result, threshold, maskIsGreaterThanThreshold);
+    // write back to memeory
+    _cmu418_vstore_float(output+i, result, maskAll);
+  }
 }
 
 
